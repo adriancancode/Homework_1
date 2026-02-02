@@ -17,6 +17,8 @@ from other code in the workspace.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 import argparse
 import sys
 from typing import Dict, List, Optional
@@ -43,6 +45,38 @@ class DictionaryAgent:
 	"""
 
 	data: Dict[str, str] = field(default_factory=lambda: dict(BUILT_IN_DICT))
+	# Optional path to a JSON file for persistence. If set, the agent will
+	# load from the file (merging with the built-in dictionary) and save on
+	# modifications.
+	storage_path: Optional[str] = None
+
+	def __post_init__(self) -> None:
+		if not self.storage_path:
+			return
+		p = Path(self.storage_path)
+		# Start from the built-in dictionary and merge any stored entries.
+		base = dict(BUILT_IN_DICT)
+		if p.exists():
+			try:
+				with p.open("r", encoding="utf-8") as fh:
+					stored = json.load(fh)
+				if isinstance(stored, dict):
+					base.update(stored)
+			except Exception:
+				# If loading fails, keep base dictionary.
+				pass
+		self.data = base
+
+	def _save(self) -> None:
+		if not self.storage_path:
+			return
+		try:
+			p = Path(self.storage_path)
+			with p.open("w", encoding="utf-8") as fh:
+				json.dump(self.data, fh, indent=2, ensure_ascii=False, sort_keys=True)
+		except Exception:
+			# Best-effort save: ignore errors to avoid crashing CLI.
+			pass
 
 	def define(self, word: str, case_sensitive: bool = False) -> Optional[str]:
 		key = word if case_sensitive else word.lower()
@@ -59,16 +93,20 @@ class DictionaryAgent:
 		if word in self.data and not overwrite:
 			return False
 		self.data[word] = definition
+		# Persist change if storage is configured
+		self._save()
 		return True
 
 	def remove(self, word: str) -> bool:
 		if word in self.data:
 			del self.data[word]
+			self._save()
 			return True
 		# try case-insensitive removal
 		for k in list(self.data.keys()):
 			if k.lower() == word.lower():
 				del self.data[k]
+				self._save()
 				return True
 		return False
 
@@ -86,6 +124,8 @@ class DictionaryAgent:
 
 def _build_parser() -> argparse.ArgumentParser:
 	p = argparse.ArgumentParser(description="DictionaryAgent CLI")
+	# Global option: path to JSON file used for persistence
+	p.add_argument("--db", required=False, help="Path to JSON file for persistent dictionary")
 	sub = p.add_subparsers(dest="cmd", required=True)
 
 	d_def = sub.add_parser("define", help="Define a word")
@@ -114,7 +154,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 	parser = _build_parser()
 	args = parser.parse_args(argv)
 
-	agent = DictionaryAgent()
+	agent = DictionaryAgent(storage_path=getattr(args, "db", None))
 
 	if args.cmd == "define":
 		definition = agent.define(args.word)

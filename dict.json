@@ -1,0 +1,9 @@
+{
+  "algorithm": "A step-by-step procedure for calculations or problem-solving.",
+  "binary": "A system using two states often represented as 0 and 1.",
+  "cache": "A hardware or software component that stores data so future requests for that data can be served faster.",
+  "dictionary": "A data structure that maps keys to values; also a reference book of words and meanings.",
+  "example": "A representative form or pattern used to illustrate a rule.",
+  "foobar": "A placeholder word",
+  "function": "A named section of a program that performs a specific task."
+}
