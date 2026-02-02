@@ -1,7 +1,7 @@
 # --- ROLE ROTATION ---
 # Architect: Adrian Vazquez - Chose the Modular stance.
 # Prompter: Gilbert Topete - Managed LLM interactions.
-# Validator: Enoch - Debugged and verified functionality.
+# Validator: Enoch Liu - Debugged and verified functionality.
 # Documenter: Jordan Toledo - Wrote the 200-word justification.
 
 """
