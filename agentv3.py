@@ -51,6 +51,7 @@ class DictionaryAgent:
 	storage_path: Optional[str] = None
 
 	def __post_init__(self) -> None:
+		# Will operate in-memory only if no storage path provided
 		if not self.storage_path:
 			return
 		p = Path(self.storage_path)
@@ -79,6 +80,7 @@ class DictionaryAgent:
 			pass
 
 	def define(self, word: str, case_sensitive: bool = False) -> Optional[str]:
+		# Normalizes the lookup so can decide what to use based on the case
 		key = word if case_sensitive else word.lower()
 		# Try exact match
 		if case_sensitive:
@@ -90,6 +92,7 @@ class DictionaryAgent:
 		return None
 
 	def add(self, word: str, definition: str, overwrite: bool = False) -> bool:
+		# Prevent dupe keys unless overwrite present
 		if word in self.data and not overwrite:
 			return False
 		self.data[word] = definition
@@ -98,11 +101,12 @@ class DictionaryAgent:
 		return True
 
 	def remove(self, word: str) -> bool:
+		# Tries to follow the word exactly
 		if word in self.data:
 			del self.data[word]
 			self._save()
 			return True
-		# try case-insensitive removal
+		# try case-insensitive removal if the first one fails
 		for k in list(self.data.keys()):
 			if k.lower() == word.lower():
 				del self.data[k]
@@ -111,6 +115,7 @@ class DictionaryAgent:
 		return False
 
 	def list(self, prefix: Optional[str] = None) -> List[str]:
+		# Keys will always be returned in a sorted order
 		keys = sorted(self.data.keys())
 		if prefix:
 			return [k for k in keys if k.startswith(prefix)]
@@ -123,6 +128,7 @@ class DictionaryAgent:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+	# Parses the arguements and what flags must be used with the arguements
 	p = argparse.ArgumentParser(description="DictionaryAgent CLI")
 	# Global option: path to JSON file used for persistence
 	p.add_argument("--db", required=False, help="Path to JSON file for persistent dictionary")
@@ -156,6 +162,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 	agent = DictionaryAgent(storage_path=getattr(args, "db", None))
 
+	# Printing out error codes so able to double-check what failed and why it failed when they occur
 	if args.cmd == "define":
 		definition = agent.define(args.word)
 		if definition:
@@ -204,3 +211,5 @@ def main(argv: Optional[List[str]] = None) -> int:
 if __name__ == "__main__":
 	raise SystemExit(main())
 
+# The code works fine but the file path to the json should always be specified
+# Examples command-line arguements would be python agent3.py --db dict.json remove --word foobar or python agent3.py --db dict.json list
